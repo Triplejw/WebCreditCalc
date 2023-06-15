@@ -9,33 +9,73 @@
     <div id="background-animation"></div>
     <div class="container">
         <h1 class="animate__animated animate__bounce">Credit Calculator</h1>
-        <form method="POST" action="/">
+        <form method="POST" action="/" id="credit-calculator-form">
             {% for i in range(8) %}
             <div>
                 <label for="dropdown{{ i }}">{{ 'Semester ' ~ (i + 1) }}:</label>
                 <select name="dropdown{{ i }}" id="dropdown{{ i }}">
                     <option value="">Select a course</option>
+                    {% set selected_codes = [] %}
+                    {% for j in range(i) %}
+                        {% set selected_code = request.form.get('dropdown{}'.format(j)) %}
+                        {% if selected_code %}
+                            {% set _ = selected_codes.append(selected_code) %}
+                        {% endif %}
+                    {% endfor %}
                     {% for course in courses %}
-                    <option value="{{ course.credits }}">{{ course.code }} - {{ course.name }}</option>
+                        {% if course.code not in selected_codes %}
+                            <option value="{{ course.credits }}">{{ course.code }} - {{ course.name }}</option>
+                        {% else %}
+                            {% if course.code == selected_codes[i] %}
+                                <option value="{{ course.credits }}" selected>{{ course.code }} - {{ course.name }}</option>
+                            {% endif %}
+                        {% endif %}
                     {% endfor %}
                 </select>
             </div>
             {% endfor %}
             <br>
-            <button class="animate__animated animate__pulse" type="submit">Calculate Credits</button>
+            <button class="animate__animated animate__pulse" type="button" id="calculate-button">Calculate Credits</button>
+            <button class="animate__animated animate__pulse" type="reset" id="reset-button">Reset</button>
         </form>
         <br>
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        <ul>
-            {% for message in messages %}
-            <li>{{ message }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-        {% endwith %}
+        <div id="result"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        $(document).ready(function() {
+            // Adjust the height of the background animation element
+            var windowHeight = $(window).height();
+            $('#background-animation').height(windowHeight);
+
+            // Calculate Credits button click event
+            $('#calculate-button').click(function() {
+                var dropdownValues = [];
+                var totalCredits = 0;
+
+                // Get the selected values from each dropdown
+                for (var i = 0; i < 8; i++) {
+                    var dropdownValue = $('#dropdown' + i).val();
+                    if (dropdownValue !== '') {
+                        dropdownValues.push(parseInt(dropdownValue));
+                        totalCredits += parseInt(dropdownValue);
+                    }
+                }
+
+                // Perform credit calculation
+                if (totalCredits < 24) {
+                    $('#result').text("Need " + (24 - totalCredits) + " credits to complete the target");
+                } else {
+                    $('#result').text("Congratulations! You have met the credit requirements.");
+                }
+            });
+
+            // Reset the form when the reset button is clicked
+            $('#reset-button').click(function() {
+                $('#credit-calculator-form')[0].reset();
+            });
+        });
+    </script>
 </body>
 </html>
